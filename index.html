@@ -105,7 +105,6 @@ function signup(){
   localStorage.setItem("users",JSON.stringify(users));
   alert("Account created");
 
-  // Firebase signup for email accounts
   if(u.includes("@")){
     firebase.auth().createUserWithEmailAndPassword(u,p)
     .then(userCredential=>{
@@ -126,7 +125,6 @@ function login(){
     return;
   }
 
-  // localStorage login
   let users=JSON.parse(localStorage.getItem("users"))||[];
   let user=users.find(x=>x.username===u&&x.password===p);
   if(user){
@@ -138,7 +136,6 @@ function login(){
     return;
   }
 
-  // Firebase login for emails
   if(u.includes("@")){
     firebase.auth().signInWithEmailAndPassword(u,p)
     .then(userCredential=>{
@@ -198,12 +195,10 @@ function addNormalItem(){
   let finalName = name;
   if(cat==="Drinks") finalName+=" ("+liter+")";
 
-  // save to Firebase
   db.collection("menuItems").add({type:cat,name:finalName,price:price,sale:sale})
     .then(()=> loadItems())
     .catch(e=>console.log(e));
 
-  // localStorage backup
   let items=JSON.parse(localStorage.getItem("menuItems"))||[];
   items.push({type:cat,name:finalName,price:price,sale:sale});
   localStorage.setItem("menuItems",JSON.stringify(items));
@@ -219,7 +214,6 @@ function addCombo(){
   const comboData = {type:"Combo",name:name,comboItems:itemsText.split("\n"),price:price};
   db.collection("menuItems").add(comboData).then(()=>loadItems());
 
-  // localStorage backup
   let items=JSON.parse(localStorage.getItem("menuItems"))||[];
   items.push(comboData);
   localStorage.setItem("menuItems",JSON.stringify(items));
@@ -318,11 +312,18 @@ function loadReceipts(){
   });
 }
 
+// ================= PRINT RECEIPTS POPUP-FREE ===================
 function printReceipt(id){
   const content=document.getElementById(id).innerHTML;
-  const win=window.open("");
-  win.document.write(content);
-  win.print();
+  const printFrame = document.createElement('iframe');
+  printFrame.style.position='absolute';
+  printFrame.style.width='0';
+  printFrame.style.height='0';
+  document.body.appendChild(printFrame);
+  printFrame.contentDocument.write(content);
+  printFrame.contentWindow.focus();
+  printFrame.contentWindow.print();
+  document.body.removeChild(printFrame);
 }
 </script>
 
@@ -346,6 +347,13 @@ firebase.initializeApp(firebaseConfig);
 firebase.analytics();
 const auth=firebase.auth();
 const db=firebase.firestore();
+
+// Ensure Firebase is ready after page load
+window.onload=function(){
+  loadMenu();
+  loadItems();
+  loadReceipts();
+};
 </script>
 
 </body>
