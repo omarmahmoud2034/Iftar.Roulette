@@ -1,337 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>iftar roulette</title>
-<style>
-body{background:#0f0f1a;color:white;font-family:Arial;padding:30px;}
-.hidden{display:none;}
-input,select,button{padding:8px;margin:5px;border-radius:20px;border:none;}
-button{background:gold;cursor:pointer;}
-.item{background:#1e1e2f;padding:15px;margin:10px 0;border-radius:12px;}
-.box{background:#1e1e2f;padding:15px;margin:10px 0;border-radius:12px;}
-#cart{position:fixed;top:20px;right:20px;width:280px;background:#222;padding:15px;border-radius:15px;}
-textarea{width:100%;height:60px;border-radius:10px;padding:5px;}
-</style>
+    <title>Iftar Roulette</title>
+    <style>
+        body { font-family: Arial; margin:0; background:#f4f4f4; }
+        header { background:#8B0000; color:white; padding:15px; text-align:center; }
+        nav button { margin:5px; padding:10px; cursor:pointer; }
+        .container { padding:20px; }
+        .hidden { display:none; }
+        input, button { padding:8px; margin:5px; }
+        .menu-item, .order-box { background:white; padding:10px; margin:10px 0; border-radius:5px; }
+        #cart { background:white; padding:10px; margin-top:15px; border-radius:5px; }
+        h2 { color:#8B0000; }
+    </style>
 </head>
 <body>
 
-<h1>🔥 Iftar Roulette (Closed) 🔥</h1>
+<header>
+    <h1>Iftar Roulette 🍽️</h1>
+    <nav>
+        <button onclick="showSection('signup')">Sign Up</button>
+        <button onclick="showSection('login')">Login</button>
+        <button onclick="showSection('menu')">Menu</button>
+        <button onclick="showSection('admin')">Admin</button>
+    </nav>
+</header>
 
-<div id="authBox">
-<h2>Login</h2>
-<input id="loginUser" placeholder="Username or Email">
-<input id="loginPass" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
+<div class="container">
 
-<h3>Sign Up</h3>
-<input id="signupUser" placeholder="Username or Email">
-<input id="signupPass" type="password" placeholder="Password">
-<input id="signupNumber" placeholder="Phone">
-<button onclick="signup()">Sign Up</button>
+<div id="signup" class="hidden">
+    <h2>Sign Up</h2>
+    <input id="signupUser" placeholder="Username"><br>
+    <input id="signupPass" type="password" placeholder="Password"><br>
+    <button onclick="signup()">Create Account</button>
 </div>
 
-<div id="mainApp" class="hidden">
-<button onclick="logout()">Logout</button>
-<div id="menu"></div>
-
-<div id="cart">
-<h3>Cart</h3>
-<div id="cartItems"></div>
-<p>Total: <span id="total">0</span> SAR</p>
-<button onclick="checkout()">Buy</button>
+<div id="login" class="hidden">
+    <h2>Login</h2>
+    <input id="loginUser" placeholder="Username"><br>
+    <input id="loginPass" type="password" placeholder="Password"><br>
+    <button onclick="login()">Login</button>
 </div>
 
-<h2>Your Receipts</h2>
-<div id="myReceipts"></div>
+<div id="menu" class="hidden">
+    <h2>Menu</h2>
+    <div id="menuList"></div>
+
+    <h3>Cart</h3>
+    <div id="cart"></div>
+    <button onclick="checkout()">Checkout</button>
 </div>
 
-<div id="adminLoginBox" class="hidden">
-<h1>Admin Panel</h1>
-<input type="password" id="adminPass" placeholder="Admin Password">
-<button onclick="adminLogin()">Enter</button>
+<div id="admin" class="hidden">
+    <h2>Admin</h2>
+    <input id="adminUser" placeholder="Admin"><br>
+    <input id="adminPass" type="password" placeholder="Password"><br>
+    <button onclick="adminLogin()">Login</button>
+
+    <div id="adminPanel" class="hidden">
+        <h3>Orders</h3>
+        <div id="ordersList"></div>
+    </div>
 </div>
 
-<div id="adminPanel" class="hidden">
-
-<h2>Add Food / Drink</h2>
-<input id="itemName" placeholder="Name">
-<input id="itemPrice" type="number" placeholder="Price">
-<input id="itemSale" placeholder="Sale (ex: 10% Ramadan)">
-<select id="itemCategory" onchange="toggleDrink()">
-<option value="Food">Food</option>
-<option value="Drinks">Drinks</option>
-</select>
-
-<select id="literSelect" class="hidden">
-<option value="250ml">250ml</option>
-<option value="500ml">500ml</option>
-<option value="1L">1L</option>
-<option value="2L">2L</option>
-</select>
-
-<button onclick="addNormalItem()">Add Item</button>
-
-<h2>Create Combo</h2>
-<input id="comboName" placeholder="Combo Name">
-<textarea id="comboItemsAdmin" placeholder="Burger x2&#10;Fries x1&#10;Cola x2"></textarea>
-<input id="comboPrice" type="number" placeholder="Combo Price">
-<button onclick="addCombo()">Add Combo</button>
-
-<h2>All Items (Delete)</h2>
-<div id="allItems"></div>
-
-<h2>All Receipts</h2>
-<div id="ordersList"></div>
-
-<button onclick="logout()">Logout</button>
 </div>
-
-<script>
-// ================= USER & ADMIN LOGIC ===================
-let currentUser=null;
-let cart=[];
-const ADMIN_PASSWORD="iftaradminpanel";
-
-// ================= SIGNUP ===================
-function signup(){
-  let u=signupUser.value.trim();
-  let p=signupPass.value.trim();
-  let n=signupNumber.value.trim();
-  if(!u||!p||!n)return alert("Fill fields");
-
-  let users=JSON.parse(localStorage.getItem("users"))||[];
-  users.push({username:u,password:p,number:n});
-  localStorage.setItem("users",JSON.stringify(users));
-  alert("Account created");
-
-  if(u.includes("@")){
-    firebase.auth().createUserWithEmailAndPassword(u,p)
-    .then(userCredential=>{
-      const user=userCredential.user;
-      db.collection("users").doc(user.uid).set({email:u,number:n});
-    })
-    .catch(e=>console.log(e.message));
-  }
-}
-
-// ================= LOGIN ===================
-function login(){
-  let u=loginUser.value.trim();
-  let p=loginPass.value.trim();
-  if(u==="Admin" && p===ADMIN_PASSWORD){
-    authBox.classList.add("hidden");
-    adminLoginBox.classList.remove("hidden");
-    return;
-  }
-
-  let users=JSON.parse(localStorage.getItem("users"))||[];
-  let user=users.find(x=>x.username===u&&x.password===p);
-  if(user){
-    currentUser=user;
-    authBox.classList.add("hidden");
-    mainApp.classList.remove("hidden");
-    loadMenu();
-    loadReceipts();
-    return;
-  }
-
-  if(u.includes("@")){
-    firebase.auth().signInWithEmailAndPassword(u,p)
-    .then(userCredential=>{
-      const user=userCredential.user;
-      db.collection("users").doc(user.uid).get()
-        .then(doc=>{
-          if(doc.exists){
-            currentUser={email:user.email,uid:user.uid,number:doc.data().number};
-            authBox.classList.add("hidden");
-            mainApp.classList.remove("hidden");
-            loadMenu();
-            loadReceipts();
-          } else alert("User data not found in Firebase");
-        });
-    })
-    .catch(e=>alert(e.message));
-  }
-}
-
-// ================= LOGOUT ===================
-function logout(){
-  currentUser=null;
-  cart=[];
-  authBox.classList.remove("hidden");
-  mainApp.classList.add("hidden");
-  adminPanel.classList.add("hidden");
-  adminLoginBox.classList.add("hidden");
-  updateCart();
-  firebase.auth().signOut();
-}
-
-// ================= ADMIN ===================
-function adminLogin(){
-  if(adminPass.value===ADMIN_PASSWORD){
-    adminLoginBox.classList.add("hidden");
-    adminPanel.classList.remove("hidden");
-    loadItems();
-    loadOrders();
-  } else alert("Wrong password");
-}
-
-function toggleDrink(){
-  const cat=itemCategory.value;
-  if(cat==="Drinks") literSelect.classList.remove("hidden");
-  else literSelect.classList.add("hidden");
-}
-
-// ================= SHOP FUNCTIONS (LIVE) ===================
-function addNormalItem(){
-  const name=itemName.value.trim();
-  const price=parseFloat(itemPrice.value);
-  const sale=itemSale.value.trim();
-  const cat=itemCategory.value;
-  const liter=literSelect.value;
-  if(!name||!price) return alert("Fill fields");
-
-  let finalName = name;
-  if(cat==="Drinks") finalName+=" ("+liter+")";
-
-  db.collection("menuItems").add({type:cat,name:finalName,price:price,sale:sale})
-    .then(()=> loadItems())
-    .catch(e=>console.log(e));
-
-  let items=JSON.parse(localStorage.getItem("menuItems"))||[];
-  items.push({type:cat,name:finalName,price:price,sale:sale});
-  localStorage.setItem("menuItems",JSON.stringify(items));
-  loadItems();
-}
-
-function addCombo(){
-  const name=comboName.value.trim();
-  const itemsText=comboItemsAdmin.value.trim();
-  const price=parseFloat(comboPrice.value);
-  if(!name||!itemsText||!price) return alert("Fill combo fields");
-
-  const comboData = {type:"Combo",name:name,comboItems:itemsText.split("\n"),price:price};
-  db.collection("menuItems").add(comboData).then(()=>loadItems());
-
-  let items=JSON.parse(localStorage.getItem("menuItems"))||[];
-  items.push(comboData);
-  localStorage.setItem("menuItems",JSON.stringify(items));
-  loadItems();
-}
-
-// ================= DELETE & LOAD ===================
-function deleteItem(docId){
-  db.collection("menuItems").doc(docId).delete().then(()=>loadItems());
-  let items=JSON.parse(localStorage.getItem("menuItems"))||[];
-  items.splice(docId,1);
-  localStorage.setItem("menuItems",JSON.stringify(items));
-  loadItems();
-}
-
-function loadItems(){
-  allItems.innerHTML="";
-  db.collection("menuItems").get().then(snapshot=>{
-    snapshot.forEach(doc=>{
-      let item=doc.data();
-      allItems.innerHTML+=`<div class="box">
-        <strong>${item.name}</strong> - ${item.price} SAR ${item.sale ? "("+item.sale+")":""}
-        <button onclick="deleteItem('${doc.id}')">Delete</button>
-      </div>`;
-    });
-  });
-}
-
-// ================= MENU FOR USERS ===================
-function loadMenu(){
-  menu.innerHTML="";
-  db.collection("menuItems").get().then(snapshot=>{
-    snapshot.forEach(doc=>{
-      let item=doc.data();
-      let extra="";
-      if(item.sale) extra+="<p>Sale: "+item.sale+"</p>";
-      if(item.type==="Combo" && item.comboItems){
-        extra+="<ul>"; item.comboItems.forEach(c=>extra+="<li>"+c+"</li>");
-        extra+="</ul>";
-      }
-      menu.innerHTML+=`<div class="item">
-        <h3>${item.name}</h3>
-        <p>${item.price} SAR ${item.sale ? "("+item.sale+")":""}</p>
-        ${extra}
-        <button onclick="addToCartFromDoc('${doc.id}')">Add</button>
-      </div>`;
-    });
-  });
-}
-
-// ================= CART ===================
-function addToCartFromDoc(docId){
-  db.collection("menuItems").doc(docId).get().then(doc=>{
-    if(doc.exists){
-      cart.push(doc.data());
-      updateCart();
-    }
-  });
-}
-
-function updateCart(){
-  cartItems.innerHTML="";
-  let total=0;
-  cart.forEach(i=>{
-    let itemPrice=parseFloat(i.price);
-    total+=itemPrice;
-    cartItems.innerHTML+=`<p>${i.name} - ${itemPrice} SAR ${i.sale ? "("+i.sale+")":""}</p>`;
-  });
-  document.getElementById("total").innerText=total.toFixed(2);
-}
-
-function checkout(){
-  if(cart.length===0)return alert("Cart empty");
-  let total=document.getElementById("total").innerText;
-  let order={id:Date.now(),username:currentUser.username,number:currentUser.number,items:cart,total:total};
-  db.collection("orders").add(order);
-
-  let orders=JSON.parse(localStorage.getItem("orders"))||[];
-  orders.push(order);
-  localStorage.setItem("orders",JSON.stringify(orders));
-  cart=[]; updateCart(); loadReceipts();
-  alert("Purchase complete");
-}
-
-// ================= LOAD RECEIPTS ===================
-function loadReceipts(){
-  myReceipts.innerHTML="";
-  db.collection("orders").get().then(snapshot=>{
-    snapshot.forEach(doc=>{
-      let o=doc.data();
-      if(o.username!==currentUser.username) return;
-      let itemsHTML="";
-      o.items.forEach(it=>itemsHTML+=`<li>${it.name} - ${it.price}${it.sale ? "("+it.sale+")":""}</li>`);
-      myReceipts.innerHTML+=`<div class="item"><ul>${itemsHTML}</ul><p>Total: ${o.total} SAR</p></div>`;
-    });
-  });
-}
-
-// ================= PRINT RECEIPTS POPUP-FREE ===================
-function printReceipt(id){
-  const content=document.getElementById(id).innerHTML;
-  const printFrame = document.createElement('iframe');
-  printFrame.style.position='absolute';
-  printFrame.style.width='0';
-  printFrame.style.height='0';
-  document.body.appendChild(printFrame);
-  printFrame.contentDocument.write(content);
-  printFrame.contentWindow.focus();
-  printFrame.contentWindow.print();
-  document.body.removeChild(printFrame);
-}
-</script>
 
 <!-- FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -340,20 +76,124 @@ const firebaseConfig = {
   projectId: "iftarroulette",
   storageBucket: "iftarroulette.firebasestorage.app",
   messagingSenderId: "358782144172",
-  appId: "1:358782144172:web:0bea1bba36f72eb43e1909",
-  measurementId: "G-1YT83WQ6VP"
+  appId: "1:358782144172:web:0bea1bba36f72eb43e1909"
 };
-firebase.initializeApp(firebaseConfig);
-firebase.analytics();
-const auth=firebase.auth();
-const db=firebase.firestore();
 
-// Ensure Firebase is ready after page load
-window.onload=function(){
-  loadMenu();
-  loadItems();
-  loadReceipts();
-};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentUser = null;
+let cart = [];
+
+function showSection(id){
+    document.querySelectorAll('.container > div').forEach(d=>d.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+}
+
+function signup(){
+    localStorage.setItem("user_"+signupUser.value, signupPass.value);
+    alert("Account created");
+}
+
+function login(){
+    if(localStorage.getItem("user_"+loginUser.value)===loginPass.value){
+        currentUser = loginUser.value;
+        showSection("menu");
+        loadMenu();
+    } else alert("Wrong login");
+}
+
+function adminLogin(){
+    if(adminUser.value==="admin" && adminPass.value==="iftaradmin"){
+        adminPanel.classList.remove("hidden");
+        loadOrders();
+    } else alert("Wrong admin");
+}
+
+function getMenu(){
+    return [
+        {name:"Shawarma", price:8},
+        {name:"Harira Soup", price:6},
+        {name:"Dates & Milk", price:5}
+    ];
+}
+
+function loadMenu(){
+    menuList.innerHTML="";
+    getMenu().forEach(item=>{
+        menuList.innerHTML+=`
+        <div class="menu-item">
+            <strong>${item.name}</strong> - ${item.price} SAR
+            <button onclick="addToCart('${item.name}',${item.price})">Add</button>
+        </div>`;
+    });
+}
+
+function addToCart(name,price){
+    cart.push({name,price});
+    updateCart();
+}
+
+function updateCart(){
+    let total=0;
+    let div=document.getElementById("cart");
+    div.innerHTML="";
+    cart.forEach(i=>{
+        total+=i.price;
+        div.innerHTML+=`<p>${i.name} - ${i.price} SAR</p>`;
+    });
+    div.innerHTML+=`<b>Total: ${total} SAR</b>`;
+}
+
+async function checkout(){
+    if(cart.length===0) return alert("Cart is empty");
+
+    let total = cart.reduce((s,i)=>s+i.price,0);
+
+    let order={
+        user: currentUser,
+        items: cart,
+        total: total,
+        date: new Date().toLocaleString()
+    };
+
+    await db.collection("orders").add(order);
+
+    printReceipt(order);
+
+    cart=[];
+    updateCart();
+
+    alert("Order saved & printed");
+}
+
+function printReceipt(order){
+    let w=window.open("");
+    w.document.write(`
+        <h2>Iftar Roulette Receipt</h2>
+        <p>User: ${order.user}</p>
+        <p>Date: ${order.date}</p>
+        <ul>
+            ${order.items.map(i=>`<li>${i.name} - ${i.price} SAR</li>`).join("")}
+        </ul>
+        <h3>Total: ${order.total} SAR</h3>
+    `);
+    w.print();
+}
+
+async function loadOrders(){
+    let snap = await db.collection("orders").get();
+    ordersList.innerHTML="";
+    snap.forEach(doc=>{
+        let o=doc.data();
+        ordersList.innerHTML+=`
+        <div class="order-box">
+            <strong>${o.user}</strong><br>
+            ${o.date}<br>
+            Total: ${o.total} SAR
+        </div>`;
+    });
+}
 </script>
 
 </body>
