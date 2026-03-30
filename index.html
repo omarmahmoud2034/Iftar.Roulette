@@ -63,8 +63,6 @@
     </div>
 </div>
 
-</div>
-
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -185,11 +183,14 @@ async function loadOrders(){
     let snap = await db.collection("orders").get();
     ordersList.innerHTML="";
     snap.forEach(doc=>{
-        let o=doc.data();
+        let o = doc.data();
         ordersList.innerHTML+=`
         <div class="order-box">
             <strong>${o.user}</strong><br>
             ${o.date}<br>
+            <ul>
+                ${o.items.map(i=>`<li>${i.name} - ${i.price} SAR</li>`).join("")}
+            </ul>
             Total: ${o.total} SAR
         </div>`;
     });
